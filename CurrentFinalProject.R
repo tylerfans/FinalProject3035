@@ -6,7 +6,8 @@ library(data.table)
 setwd("~/R")
 Sys.setlocale('LC_ALL','C')
 
-
+#your filepath might be different depending on where you uploaded your folder with txt documents. My folder was inside the R file.
+#let me know if you need help
 #corpus for male and female scrubbed
 both_corpus <- list.files(path = "./scrubbed/1880s-all-female-male-scrubbed", full.names = TRUE) #make a list of all txt files in the folder containing both male and female authors, use path to get to the file location
 both_dataset <- data.frame() #create a new data frame that can be added to in the for-loop
