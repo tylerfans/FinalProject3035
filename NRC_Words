@@ -1,0 +1,123 @@
+
+##Fear words for Male and Female using NRC
+
+NRC <- lexicon_nrc()
+
+NRCfear <- NRC %>%
+  filter(word != "miss") %>%
+  filter(sentiment == "fear")
+
+male_fear <- male_words %>%
+  inner_join(NRCfear) %>%
+  count(word, sort = TRUE) %>%
+  top_n(20) %>%
+  mutate(word = reorder(word, n))
+
+ggplot(male_fear, aes(word, n)) +
+  geom_col()+
+  labs(title = "Top Fear Words in Male Corpora",
+       subtitle = "NRC sentiment lexicon")+
+  coord_flip()
+
+female_fear <- female_words %>%
+  inner_join(NRCfear) %>%
+  count(word, sort = TRUE) %>%
+  top_n(20) %>%
+  mutate(word = reorder(word, n))
+
+ggplot(female_fear, aes(word, n)) +
+  geom_col()+
+  labs(title = "Top Fear Words in Female Corpora",
+       subtitle = "NRC sentiment lexicon")+
+  coord_flip()
+
+##Joy words for both Male and Female using NRC
+
+NRCjoy <- NRC %>%
+  filter(word != "miss") %>%
+  filter(sentiment == "joy")
+
+male_joy <- male_words %>%
+  inner_join(NRCjoy) %>%
+  count(word, sort = TRUE) %>%
+  top_n(15) %>%
+  mutate(word = reorder(word, n))
+
+ggplot(male_joy, aes(word, n)) +
+  geom_col()+
+  labs(title = "Top Joy Words in Male Corpora",
+       subtitle = "NRC sentiment lexicon")+
+  coord_flip()
+
+female_joy <- female_words %>%
+  inner_join(NRCjoy) %>%
+  count(word, sort = TRUE) %>%
+  top_n(15) %>%
+  mutate(word = reorder(word, n))
+
+ggplot(female_joy, aes(word, n)) +
+  geom_col()+
+  labs(title = "Top Joy Words in Female Corpora",
+       subtitle = "NRC sentiment lexicon")+
+  coord_flip()
+
+##Anger Words using for male and female using NRC
+
+NRCanger <- NRC %>%
+  filter(word != "miss") %>%
+  filter(sentiment == "anger")
+
+male_anger <- male_words %>%
+  inner_join(NRCanger) %>%
+  count(word, sort = TRUE) %>%
+  top_n(15) %>%
+  mutate(word = reorder(word, n))
+
+ggplot(male_anger, aes(word, n)) +
+  geom_col()+
+  labs(title = "Top Anger Words in Male Corpora",
+       subtitle = "NRC sentiment lexicon")+
+  coord_flip()
+
+female_anger <- female_words %>%
+  inner_join(NRCanger) %>%
+  count(word, sort = TRUE) %>%
+  top_n(15) %>%
+  mutate(word = reorder(word, n))
+
+ggplot(female_anger, aes(word, n)) +
+  geom_col()+
+  labs(title = "Top Anger Words in Female Corpora",
+       subtitle = "NRC sentiment lexicon")+
+  coord_flip()
+
+
+##Disgust in both Male and Female Corpos using NRC
+
+NRCdisgust <- NRC %>%
+  filter(word != "miss") %>%
+  filter(sentiment == "disgust")
+
+male_disgust <- male_words %>% 
+  inner_join(NRCdisgust) %>%
+  count(word, sort = TRUE) %>%
+  top_n(15) %>%
+  mutate(word = reorder(word, n))
+
+ggplot(male_disgust, aes(word, n)) +
+  geom_col()+
+  labs(title = "Top Disgust Words in Male Corpora",
+       subtitle = "NRC sentiment lexicon")+
+  coord_flip()
+
+female_disgust <- female_words %>% 
+  inner_join(NRCdisgust) %>%
+  count(word, sort = TRUE) %>%
+  top_n(15) %>%
+  mutate(word = reorder(word, n))
+
+ggplot(female_disgust, aes(word, n)) +
+  geom_col()+
+  labs(title = "Top Disgust Words in Female Corpora",
+       subtitle = "NRC sentiment lexicon")+
+  coord_flip()
