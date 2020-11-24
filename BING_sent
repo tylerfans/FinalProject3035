@@ -1,0 +1,47 @@
+##Sentiment to get Code to Work
+
+BING_mod <- get_sentiments("bing") %>% 
+  filter(word != "miss")
+
+BING_pos <- BING_mod %>%
+  filter(word != "miss") %>%
+  filter(sentiment == "positive")
+
+BING_neg <- BING_mod %>%
+  filter(word != "miss") %>%
+  filter(sentiment == "negative")
+
+##Male sentiment using BING for both positive and negative words
+
+male_pos <- male_words %>% 
+  inner_join(BING_pos) %>%
+  count(word, sort = TRUE) %>%
+  top_n(20) %>%
+  mutate(word = reorder(word, n))
+
+male_neg <- male_words %>% 
+  inner_join(BING_neg) %>%
+  count(word, sort = TRUE) %>%
+  top_n(20) %>%
+  mutate(word = reorder(word, n))
+male_sent <- male_words %>% 
+  inner_join(BING_mod) %>%
+  count(sentiment, sort = TRUE)
+
+##Female sentiment using BING for both positive and negative words
+
+female_pos <- female_words %>% 
+  inner_join(BING_pos) %>%
+  count(word, sort = TRUE) %>%
+  top_n(20) %>%
+  mutate(word = reorder(word, n))
+
+female_neg <- female_words %>% 
+  inner_join(BING_neg) %>%
+  count(word, sort = TRUE) %>%
+  top_n(20) %>%
+  mutate(word = reorder(word, n))
+
+female_sent <- female_words %>% 
+  inner_join(BING_mod) %>%
+  count(sentiment, sort = TRUE)
