@@ -1,0 +1,62 @@
+##code to generate bigrams and ggplots 
+##first I loaded the unscrubbed corpus using the for loop in Tyler’s code. Unscrubbed because I want to look at the words he and she.
+###comments and ggplots are by Mika
+
+data("stop_words")
+SMART <- stop_words%>%
+  filter(lexicon == "SMART")%>%
+  filter(word != "he") %>%          # remember != in this context means "not equal to"
+  filter(word != "she")
+
+fem_bigrams <- fem_dataset%>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) ##unnesting into bigrams
+
+fem_bigrams_filtered <- fem_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  ## "bigram" is the column to be separated
+  ## "word1" and "word2" are the two new columns to be created
+  ## "sep = " "" tells R to split the bigram where it finds a space
+  
+  filter(!word1 %in% SMART$word) %>%
+  filter(!word2 %in% SMART$word)
+
+
+fem_bigrams_scrubbed <- fem_bigrams_filtered %>%
+  unite(bigram, word1, word2, sep = " ")   ## joining everything back together with unite()
+
+
+pronouns <- c("he", "she")  ##so I can filter for the words he and she and have them occupy the same collumn
+
+fem_bigram_gender <- fem_bigrams_scrubbed %>%
+  count(bigram, sort = TRUE) %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(word1 %in% pronouns) %>%             ## this is the step where the pronouns are filtered
+  count(word1, word2, wt = n, sort = TRUE)
+
+
+# Now we can create a visualization to help us compare these two sets of 
+# bigrams:
+
+# First, we'll visualize for "he" words. This is done by 
+# filtering word1 for only "he", finding the top 20, and plotting.
+
+fem_bigram_gender %>%
+  filter(word1 == "he") %>%
+  top_n(20)%>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  geom_col(color="skyblue4", fill="cadetblue1")+
+  coord_flip()
+
+# Next we can visualize the top "she" bigrams, using the 
+# same filter, but this time for "she". 
+
+fem_bigram_gender %>%
+  filter(word1 == "she") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  geom_col(color="violetred4", fill="lightpink")+
+  coord_flip()
