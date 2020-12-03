@@ -1,0 +1,132 @@
+library(tidyverse)
+library(gutenbergr)
+library(tidytext)
+library(textdata)
+library(data.table)
+library(stringr)
+#setting working directory to R folder so I dont have to do it manually every time
+setwd("~/R")
+#setting encoding system to correct format. Not exactly sure what this is doing, but it fixed a bug so I need it.
+Sys.setlocale('LC_ALL','C')
+#importing common stop words for filtering purposes
+data("stop_words")
+
+
+#creating words to be filtered out of bag of words
+validation_words <- c("revolution", "science", "scientific", "industrial", "middle ages", "modern")
+religion_words <- c("religion", "sacred", "worship", "faith", "divine", "churches", "god", "christian", "bible", "heaven", "hell")
+progress_words <- c("progress", "improvement", "hope", "happiness", "universal", "virtue", "vice", "truth", "false", "work", "marriage", "heroic", "evil", "jesus", "christ", "rome", "greece", "heaven", "hell")
+
+
+#modifying stop words to make sure it includes he, she, and the various words from cohens corpus
+#if you want a word to be included into the corpus, then filter it out with ! in the smart section
+#using stop_words only considers he and she. maybe add more pronouns
+SMART_mod <- stop_words %>% 
+  filter(lexicon == "SMART")%>%
+  filter(word != "he") %>%      # remember != in this context means "not equal to"
+  filter(word != "she") %>% 
+  filter(!word %in% progress_words) %>% 
+  filter(!word %in% religion_words) %>% 
+  filter(!word %in% validation_words)
+SMART <- stop_words %>% 
+  filter(lexicon == "SMART") %>%
+  filter(!word %in% progress_words) %>% 
+  filter(!word %in% religion_words) %>% 
+  filter(!word %in% validation_words)
+
+
+#creating a list of all unscrubbed txt files
+both_corpus_full <- list.files(path = "./maleandfemalecorpus", full.names = TRUE)
+female_corpus_full <- list.files(path = "./femalecorpus", full.names = TRUE)
+male_corpus_full <- list.files(path = "./malecorpus", full.names = TRUE)
+
+
+#create empty dataset for each corpus with the full txt, this we be added to in the for loop
+both_dataset_full <- data.frame()
+female_dataset_full <- data.frame()
+male_dataset_full <- data.frame()
+
+
+#same as above for loops, but for the unscrubbed versions of the text
+for (i in 1:10) {
+  both_temp_data_full <- fread(both_corpus_full[i], sep = '\n', col.names = "text")
+  both_dataset_full <- rbindlist(list(both_dataset_full, both_temp_data_full))
+}
+for (i in 1:10) {
+  female_temp_data_full <- fread(female_corpus_full[i], sep = '\n', col.names = "text")
+  female_dataset_full <- rbindlist(list(female_dataset_full, female_temp_data_full))
+}
+for (i in 1:10) {
+  male_temp_data_full <- fread(male_corpus_full[i], sep = '\n', col.names = "text")
+  male_dataset_full <- rbindlist(list(male_dataset_full, male_temp_data_full))
+}
+
+
+#unnest each corpus as a bigram, unscrubbed version
+#Bigram with zero filtering being done.
+#Basic dataset containing all pronouns
+#still deciding on which one of these to use.
+female_bigrams <- female_dataset_full %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2)
+#bigram using the modified version smart stop_words. includes he and she pronouns
+female_bigrams2 <- female_dataset_full %>% 
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>% 
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(!word1 %in% SMART_mod$word) %>%
+  filter(!word2 %in% SMART_mod$word) %>%
+  unite(bigram, word1, word2, sep = " ")
+#bigram using standard smart stop_word. does not have pronouns, but keeps cohens words
+female_bigrams3 <- female_dataset_full %>% 
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>% 
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(!word1 %in% SMART$word) %>%
+  filter(!word2 %in% SMART$word) %>%
+  unite(bigram, word1, word2, sep = " ")
+
+
+#gets a clean bigram that we can look at
+female_bigram_gender <- female_bigrams %>%
+  count(bigram, sort = TRUE) %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(word1 %in% progress_words) %>%             ## this is the line that we change depending on what we are filtering
+  count(word1, word2, wt = n, sort = TRUE)
+female_bigram_gender2 <- female_bigrams2 %>%
+  count(bigram, sort = TRUE) %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(word1 %in% progress_words) %>%             ## this is the step where the pronouns are filtered
+  count(word1, word2, wt = n, sort = TRUE)
+female_bigram_gender3 <- female_bigrams3 %>%
+  count(bigram, sort = TRUE) %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(word1 %in% progress_words) %>%             ## this is the step where the pronouns are filtered
+  count(word1, word2, wt = n, sort = TRUE)
+
+
+#bigram plots
+female_bigram_gender %>%
+  filter(word1 == "hope") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+#when using a smaller corpora of books, these graphs will bug out and return more than 20 values because it is returning all of the words that 
+#were used only 1 time because there were not 20 words that were used more than once here
+#this shouldnt be a problem when looking at the entire corpora, and if it is we can simply lower the top_n value
+female_bigram_gender2 %>%
+  filter(word1 == "work") %>%
+  top_n(5) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  geom_col(color="skyblue4", fill="cadetblue1")+
+  coord_flip()
+female_bigram_gender3 %>%
+  filter(word1 == "hope") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  geom_col(color="skyblue4", fill="cadetblue1")+
+  coord_flip()
