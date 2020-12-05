@@ -5,7 +5,7 @@ library(textdata)
 library(data.table)
 library(stringr)
 #setting working directory to R folder so I dont have to do it manually every time
-setwd("~/R") # ***CAREFUL**** DELETE THIS LINE IF YOU DO NOT USE R AS YOUR WORKING DIRECTORY
+setwd("~/R")
 #setting encoding system to correct format. Not exactly sure what this is doing, but it fixed a bug so I need it.
 Sys.setlocale('LC_ALL','C')
 
@@ -19,7 +19,6 @@ progress_words <- c("progress", "improvement", "hope", "happiness", "universal",
 
 
 #make a list of all txt files in the folder containing both male and female authors, use path to get to the file location
-
 both_corpus <- list.files(path = "./scrubbed/1880s-all-female-male-scrubbed", full.names = TRUE)
 female_corpus <- list.files(path = "./scrubbed/1880sfemalecorpustextfiles-scrubbed", full.names = TRUE)
 male_corpus <- list.files(path = "./scrubbed/1880smalecorpustextfiles-scrubbed", full.names = TRUE)
@@ -205,7 +204,7 @@ ggplot(male_validation_count, aes(word,n))+
 
 #additional words to add to bigram filter
 dustin_words <- c("money","poor","lord","boy")
-loni_words <-c("religion", "restraint", "gentility","marriage", "pollution", "disloyalty", "disorder", "nature", "hands", "head", "heart", "house", "effluvia")
+loni_words <- c("religion", "restraint", "gentility","marriage", "pollution", "disloyalty", "disorder", "nature", "hands", "head", "heart", "house", "effluvia")
 #using words from dan cohens project along with dustin and loni's words
 bag_o_words <- c(religion_words,progress_words,validation_words,dustin_words,loni_words)
 
@@ -225,7 +224,7 @@ female_dataset_full <- data.frame()
 male_dataset_full <- data.frame()
 
 #same as above for loops, but for the unscrubbed versions of the text
-for (i in 1:length(both_corpus_full)) {
+for (i in 1:30) {
   both_temp_data_full <- fread(both_corpus_full[i], sep = '\n', col.names = "text")
   both_dataset_full <- rbindlist(list(both_dataset_full, both_temp_data_full))
 }
