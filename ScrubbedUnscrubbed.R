@@ -224,7 +224,7 @@ female_dataset_full <- data.frame()
 male_dataset_full <- data.frame()
 
 #same as above for loops, but for the unscrubbed versions of the text
-for (i in 1:30) {
+for (i in 1:length(both_corpus_full)) {
   both_temp_data_full <- fread(both_corpus_full[i], sep = '\n', col.names = "text")
   both_dataset_full <- rbindlist(list(both_dataset_full, both_temp_data_full))
 }
