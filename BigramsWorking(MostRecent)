@@ -1,0 +1,782 @@
+library(tidyverse)
+library(gutenbergr)
+library(tidytext)
+library(textdata)
+library(data.table)
+library(stringr)
+library(ggplot2)
+library(ggpubr)
+#setting working directory to R folder so I dont have to do it manually every time
+setwd("~/R")
+#setting encoding system to correct format. Not exactly sure what this is doing, but it fixed a bug so I need it.
+Sys.setlocale("LC_ALL","C")
+#creating words to be filtered out of bag of words
+
+validation_words <- c("revolution", "science", "scientific", "industrial", "middle ages", "modern")
+religion_words <- c("religion", "sacred", "worship", "faith", "divine", "churches", "god", "christian", "bible", "heaven", "hell")
+progress_words <- c("progress", "improvement", "hope", "happiness", "universal", "virtue", "vice", "truth", "false", "work", "marriage", "heroic", "evil", "jesus", "christ", "rome", "greece", "heaven", "hell")
+
+# ^^ PREFATORY INFORMATION ABOVE, RUN WHEN WORKING WITH BOTH SCRUBBED AND UNSCRUBBED VERSION ^^
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#make a list of all txt files in the folder containing both male and female authors, use path to get to the file location
+both_corpus <- list.files(path = "./scrubbed/1880s-all-female-male-scrubbed", full.names = TRUE)
+female_corpus <- list.files(path = "./scrubbed/1880sfemalecorpustextfiles-scrubbed", full.names = TRUE)
+male_corpus <- list.files(path = "./scrubbed/1880smalecorpustextfiles-scrubbed", full.names = TRUE)
+
+#create empty dataset for each corpus, this will be added to in the for loop
+both_dataset <- data.frame()
+female_dataset <- data.frame()
+male_dataset <- data.frame()
+
+#iterate through the entire length of the list of files, this will apply fread on every document in the corresponding folder
+#change the range of the for loop if the code if having issues being run. The data set is very large and can crash if "i in 1:length(list of files)" is left on all the for loops
+#you have to be careful when running the entire loop, and it works much better when RStudio is being run locally rather than through the jupyter hub
+for (i in 1:length(both_corpus)) {
+  both_temp_data <- fread(both_corpus[i], sep = "\n", col.names = "text", encoding = "UTF-8") #read in files using the fread function from the data.table package
+  both_dataset <- rbindlist(list(both_dataset, both_temp_data)) #for each iteration, bind the new data to the building dataset
+}
+for (i in 1:length(female_corpus)) {
+  female_temp_data <- fread(female_corpus[i], sep = '\n', col.names = "text", encoding = "UTF-8")
+  female_dataset <- rbindlist(list(female_dataset, female_temp_data))
+}
+for (i in 1:length(male_corpus)){
+  male_temp_data <- fread(male_corpus[i], sep = '\n', col.names = "text", encoding = "UTF-8")
+  male_dataset <- rbindlist(list(male_dataset, male_temp_data))
+}
+
+#unnest each corpus by words
+both_words <- both_dataset %>% unnest_tokens(word,text)
+female_words <- female_dataset %>% unnest_tokens(word,text)
+male_words <- male_dataset %>% unnest_tokens(word,text)
+
+#top 20 words of each corpus
+both_wc_20 <- both_words %>%
+  count(word, sort = TRUE) %>%
+  top_n(20) %>%
+  mutate(word = reorder(word, n))
+female_wc_20 <- female_words %>%
+  count(word, sort = TRUE) %>%
+  top_n(20) %>%
+  mutate(word = reorder(word, n))
+male_wc_20 <- male_words %>%
+  count(word, sort = TRUE) %>%
+  top_n(20) %>%
+  mutate(word = reorder(word, n))
+
+#WORKING ON MALE/FEMALE CORPUS
+#gathering count of words from each category Cohen created
+both_validation_filter <- both_words %>% filter(word %in% validation_words)
+both_validation_count <- both_validation_filter %>%
+  count(word, sort = TRUE) %>%
+  mutate(word = reorder(word,n))
+both_religion_filter <- both_words %>% filter(word %in% religion_words)
+both_religion_count <- both_religion_filter %>%
+  count(word, sort = TRUE) %>%
+  mutate(word = reorder(word,n))
+both_progress_filter <- both_words %>% filter(word %in% progress_words)
+both_progress_count <- both_progress_filter %>%
+  count(word, sort = TRUE) %>%
+  mutate(word = reorder(word,n))
+
+#WORKING ON FEMALE CORPUS
+#gathering count of words from each category Cohen created
+female_validation_filter <- female_words %>% filter(word %in% validation_words)
+female_validation_count <- female_validation_filter %>%
+  count(word, sort = TRUE) %>%
+  mutate(word = reorder(word,n))
+female_religion_filter <- female_words %>% filter(word %in% religion_words)
+female_religion_count <-female_religion_filter %>%
+  count(word, sort = TRUE) %>%
+  mutate(word = reorder(word,n))
+female_progress_filter <- female_words %>% filter(word %in% progress_words)
+female_progress_count <- female_progress_filter %>%
+  count(word, sort = TRUE) %>%
+  mutate(word = reorder(word,n))
+
+#WORKING ON MALE CORPUS
+#gathering count of words from each category Cohen created
+male_validation_filter <- male_words %>% filter(word %in% validation_words)
+male_validation_count <- male_validation_filter %>%
+  count(word, sort = TRUE) %>%
+  mutate(word = reorder(word,n))
+male_religion_filter <- male_words %>% filter(word %in% religion_words)
+male_religion_count <- male_religion_filter %>%
+  count(word, sort = TRUE) %>%
+  mutate(word = reorder(word,n))
+male_progress_filter <- male_words %>% filter(word %in% progress_words)
+male_progress_count <- male_progress_filter %>%
+  count(word, sort = TRUE) %>%
+  mutate(word = reorder(word,n))
+
+#GRAPHS
+#top 20 words for each corpus
+top_both <- ggplot(both_wc_20, aes(word,n))+
+  geom_col(color = "green4", fill = "green1")+
+  ggtitle("Top Words in the Male/Female Corpus")+
+  xlab("words")+
+  ylab(NULL)+
+  coord_flip()
+top_fem <- ggplot(female_wc_20, aes(word,n))+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  ggtitle("Top Words in the Female Corpus")+
+  xlab("words")+
+  ylab(NULL)+
+  coord_flip()
+top_male <- ggplot(male_wc_20, aes(word,n))+
+  geom_col(color = "skyblue4", fill="cadetblue1")+
+  ggtitle("Top Words in the Male Corpus")+
+  xlab("words")+
+  ylab(NULL)+
+  coord_flip()
+ggarrange(top_both, top_fem, top_male, ncol = 3)
+ggarrange(top_fem, top_male, ncol = 2)
+
+#progress words on corpora
+both_prog <- ggplot(both_progress_count, aes(word,n))+
+  geom_col(color = "green4", fill = "green1")+
+  ggtitle("Progress Words in Male/Female Corpus")+
+  xlab("words")+
+  ylab(NULL)+
+  coord_flip()
+fem_prog <- ggplot(female_progress_count, aes(word,n))+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  ggtitle("Progress Words in Female Corpus")+
+  xlab("words")+
+  ylab(NULL)+
+  coord_flip()
+male_prog <- ggplot(male_progress_count, aes(word,n))+
+  geom_col(color = "skyblue4", fill="cadetblue1")+
+  ggtitle("Progress Words in Male Corpus")+
+  xlab("words")+
+  ylab(NULL)+
+  coord_flip()
+ggarrange(both_prog, fem_prog, male_prog, ncol = 3)
+ggarrange(fem_prog, male_prog, ncol = 2)
+
+#religion words on copora
+both_relig <- ggplot(both_religion_count, aes(word,n))+
+  geom_col(color = "green4", fill = "green1")+
+  ggtitle("Religion Words in Male/Female Corpus")+
+  xlab("words")+
+  ylab(NULL)+
+  coord_flip()
+fem_relig <- ggplot(female_religion_count, aes(word,n))+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  ggtitle("Religion Words in Female Corpus")+
+  xlab("words")+
+  ylab(NULL)+
+  coord_flip()
+male_relig <- ggplot(male_religion_count, aes(word,n))+
+  geom_col(color = "skyblue4", fill="cadetblue1")+
+  ggtitle("Religion Words in Male Corpus")+
+  xlab("words")+
+  ylab(NULL)+
+  coord_flip()
+ggarrange(both_relig, fem_relig, male_relig, ncol = 3)
+ggarrange(fem_relig, male_relig, ncol = 2)
+
+#validation words on corpora
+both_valid <- ggplot(both_validation_count, aes(word,n))+
+  geom_col(color = "green4", fill = "green1")+
+  ggtitle("Validation Words in Male/Female Corpus")+
+  xlab("words")+
+  ylab(NULL)+
+  coord_flip()
+fem_valid <- ggplot(female_validation_count, aes(word,n))+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  ggtitle("Validation Words in Female Corpus")+
+  xlab("words")+
+  ylab(NULL)+
+  coord_flip()
+male_valid <- ggplot(male_validation_count, aes(word,n))+
+  geom_col(color = "skyblue4", fill="cadetblue1")+
+  ggtitle("Validation Words in Male Corpus")+
+  xlab("words")+
+  ylab(NULL)+
+  coord_flip()
+ggarrange(both_valid, fem_valid, male_valid, ncol = 3)
+ggarrange(fem_valid, male_valid, ncol = 2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#WE ARE NOW WORKING WITH THE UN-SCRUBBED VERSION OF THE TEXT
+
+#additional words to add to bigram filter
+dustin_words <- c("money","poor","lord","boy")
+loni_words <- c("religion", "restraint", "gentility","marriage", "pollution", "disloyalty", "disorder", "nature", "hands", "head", "heart", "house", "effluvia", "he", "she")
+#using words from dan cohens project along with dustin and loni's words
+bag_o_words <- c(religion_words,progress_words,validation_words,dustin_words,loni_words)
+
+#This is where we decide which words are included in our smart lexicon filter
+SMART <- stop_words %>%
+  filter(lexicon == "SMART") %>%
+  filter(!word %in% bag_o_words)
+  #filter(word == "â")
+
+#creating a list of all unscrubbed txt files
+female_corpus_full <- list.files(path = "./unscrubbed/1880sfemalecorpus", full.names = TRUE)
+male_corpus_full <- list.files(path = "./unscrubbed/1880smalecorpus", full.names = TRUE)
+
+#create empty dataset for each corpus with the full txt, this we be added to in the for loop
+female_dataset_full <- data.frame()
+male_dataset_full <- data.frame()
+
+#same as above for loops, but for the unscrubbed versions of the text
+for (i in 1:100) {
+  female_temp_data_full <- fread(female_corpus_full[i], sep = '\n', col.names = "text")
+  female_dataset_full <- rbindlist(list(female_dataset_full, female_temp_data_full))
+}
+for (i in 1:100) {
+  male_temp_data_full <- fread(male_corpus_full[i], sep = '\n', col.names = "text")
+  male_dataset_full <- rbindlist(list(male_dataset_full, male_temp_data_full))
+}
+
+#creating bigrams for each corpus and then filtering by our modified SMART word filter
+#causes memory overflow when used to sort a whole corpora
+female_bigram <- female_dataset_full %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(!word1 %in% SMART$word) %>%
+  filter(!word2 %in% SMART$word) %>%
+  unite(bigram, word1, word2, sep = " ")
+male_bigram <- male_dataset_full %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(!word1 %in% SMART$word) %>%
+  filter(!word2 %in% SMART$word) %>%
+  unite(bigram, word1, word2, sep = " ")
+
+#filtering
+female_bigram_filtered <- female_bigram %>%
+  count(bigram, sort = TRUE) %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(word1 %in% bag_o_words) %>%             ## this lets us see how the words we use are used in relation to smart words
+  count(word1, word2, wt = n, sort = TRUE)
+male_bigram_filtered <- male_bigram %>%
+  count(bigram, sort = TRUE) %>%
+  separate(bigram, c("word1", "word2"), sep = " ") %>%
+  filter(word1 %in% bag_o_words) %>%             ## this lets us see how the words we use are used in relation to smart words
+  count(word1, word2, wt = n, sort = TRUE)
+
+#TEMPLATE FOR GRAPHING BIGRAMS
+fem_money <- female_bigram_filtered %>%
+  filter(word1 == "money") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Money"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_money <- male_bigram_filtered %>%
+  filter(word1 == "money") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Money"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_money, male_money, ncol=2)
+
+fem_poor <- female_bigram_filtered %>%
+  filter(word1 == "poor") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Poor"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_poor <- male_bigram_filtered %>%
+  filter(word1 == "poor") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Poor"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_poor, male_poor, ncol=2)
+
+fem_lord <- female_bigram_filtered %>%
+  filter(word1 == "lord") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Lord"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_lord <- male_bigram_filtered %>%
+  filter(word1 == "lord") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Lord"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_lord, male_lord, ncol=2)
+
+fem_boy <- female_bigram_filtered %>%
+  filter(word1 == "boy") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Boy"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_boy <- male_bigram_filtered %>%
+  filter(word1 == "boy") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Boy"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_boy, male_boy, ncol=2)
+
+fem_religion <- female_bigram_filtered %>%
+  filter(word1 == "religion") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Religion"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_religion <- male_bigram_filtered %>%
+  filter(word1 == "religion") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Religion"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_religion, male_religion, ncol=2)
+
+fem_restraint <- female_bigram_filtered %>%
+  filter(word1 == "restraint") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Restraint"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_restraint <- male_bigram_filtered %>%
+  filter(word1 == "restraint") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Restraint"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_restraint, male_restraint, ncol=2)
+
+fem_gentility <- female_bigram_filtered %>%
+  filter(word1 == "gentility") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Gentility"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_gentility <- male_bigram_filtered %>%
+  filter(word1 == "gentility") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Gentility"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_gentility, male_gentility, ncol=2)
+
+fem_marriage <- female_bigram_filtered %>%
+  filter(word1 == "marriage") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Marriage"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_marriage <- male_bigram_filtered %>%
+  filter(word1 == "marriage") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Marriage"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_marriage, male_marriage, ncol=2)
+
+fem_pollution <- female_bigram_filtered %>%
+  filter(word1 == "pollution") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Pollution"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_polution <- male_bigram_filtered %>%
+  filter(word1 == "pollution") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Pollution"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_pollution, male_polution, ncol=2)
+
+fem_disloyalty <- female_bigram_filtered %>%
+  filter(word1 == "disloyalty") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Disloyalty"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_disloyalty <- male_bigram_filtered %>%
+  filter(word1 == "disloyalty") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Disloyalty"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_disloyalty, male_disloyalty, ncol=2)
+
+fem_disorder <- female_bigram_filtered %>%
+  filter(word1 == "disorder") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Disorder"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_disorder <- male_bigram_filtered %>%
+  filter(word1 == "disorder") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Disorder"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_disorder, male_disorder, ncol=2)
+
+fem_nature <- female_bigram_filtered %>%
+  filter(word1 == "nature") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Nature"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_nature <- male_bigram_filtered %>%
+  filter(word1 == "nature") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Nature"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_nature, male_nature, ncol=2)
+
+fem_hands <- female_bigram_filtered %>%
+  filter(word1 == "hands") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Hands"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_hands <- male_bigram_filtered %>%
+  filter(word1 == "hands") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Hands"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_hands, male_hands, ncol=2)
+
+fem_head <- female_bigram_filtered %>%
+  filter(word1 == "head") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Head"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_head <- male_bigram_filtered %>%
+  filter(word1 == "head") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Head"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_head, male_head, ncol=2)
+
+fem_heart <- female_bigram_filtered %>%
+  filter(word1 == "heart") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Heart"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_heart <- male_bigram_filtered %>%
+  filter(word1 == "heart") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Heart"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_heart, male_heart, ncol=2)
+
+fem_house <- female_bigram_filtered %>%
+  filter(word1 == "house") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "House"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_house <- male_bigram_filtered %>%
+  filter(word1 == "house") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "House"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_house, male_house, ncol=2)
+
+fem_effluvia <- female_bigram_filtered %>%
+  filter(word1 == "effluvia") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Effluvia"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_effluvia <- male_bigram_filtered %>%
+  filter(word1 == "effluvia") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Effluvia"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_effluvia, male_effluvia, ncol=2)
+
+fem_he <- female_bigram_filtered %>%
+  filter(word1 == "he") %>%
+  top_n(40) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "He"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_he <- male_bigram_filtered %>%
+  filter(word1 == "he") %>%
+  top_n(40) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "He"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_he, male_he, ncol=2)
+
+fem_she <- female_bigram_filtered %>%
+  filter(word1 == "she") %>%
+  top_n(40) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "She"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_she <- male_bigram_filtered %>%
+  filter(word1 == "she") %>%
+  top_n(40) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "She"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_she, male_she, ncol=2)
+
+fem_revolution <- female_bigram_filtered %>%
+  filter(word1 == "revolution") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Female Bigram For Word "Revolution"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color = "violetred4", fill = "lightpink")+
+  coord_flip()
+male_revolution <- male_bigram_filtered %>%
+  filter(word1 == "revolution") %>%
+  top_n(20) %>%
+  mutate(word2 = reorder(word2, n)) %>%
+  ggplot() +
+  aes(word2, n) +
+  ggtitle('Male Bigram For Word "Revolution"')+
+  xlab("words")+
+  ylab(NULL)+
+  geom_col(color="skyblue4", fill="cadetblue1") +
+  coord_flip()
+ggarrange(fem_revolution, male_revolution, ncol=2)
+
+
+
+
+
+
